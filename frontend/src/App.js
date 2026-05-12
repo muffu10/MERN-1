@@ -4,9 +4,12 @@ import axios from "axios";
 function App() {
   const [tasks, setTasks] = useState([]);
   const [title, setTitle] = useState("");
+  const [editId, setEditId] = useState(null);
+  const [editText, setEditText] = useState("");
 
   const API = "/api/tasks";
 
+  // Fetch Tasks
   const fetchTasks = async () => {
     const res = await axios.get(API);
     setTasks(res.data);
@@ -16,14 +19,17 @@ function App() {
     fetchTasks();
   }, []);
 
+  // Add Task
   const addTask = async () => {
     if (!title) return;
 
     await axios.post(API, { title });
+
     setTitle("");
     fetchTasks();
   };
 
+  // Toggle Complete
   const toggleTask = async (task) => {
     await axios.put(`${API}/${task._id}`, {
       completed: !task.completed,
@@ -32,8 +38,28 @@ function App() {
     fetchTasks();
   };
 
+  // Delete Task
   const deleteTask = async (id) => {
     await axios.delete(`${API}/${id}`);
+
+    fetchTasks();
+  };
+
+  // Start Edit
+  const startEdit = (task) => {
+    setEditId(task._id);
+    setEditText(task.title);
+  };
+
+  // Save Edit
+  const saveEdit = async (id) => {
+    await axios.put(`${API}/${id}`, {
+      title: editText,
+    });
+
+    setEditId(null);
+    setEditText("");
+
     fetchTasks();
   };
 
@@ -55,19 +81,42 @@ function App() {
       <div className="task-list">
         {tasks.map((task) => (
           <div className="task" key={task._id}>
-            <span
-              onClick={() => toggleTask(task)}
-              style={{
-                textDecoration: task.completed ? "line-through" : "none",
-                cursor: "pointer"
-              }}
-            >
-              {task.title}
-            </span>
+            {editId === task._id ? (
+              <>
+                <input
+                  value={editText}
+                  onChange={(e) => setEditText(e.target.value)}
+                />
 
-            <button onClick={() => deleteTask(task._id)}>
-              Delete
-            </button>
+                <button onClick={() => saveEdit(task._id)}>
+                  Save
+                </button>
+              </>
+            ) : (
+              <>
+                <span
+                  onClick={() => toggleTask(task)}
+                  style={{
+                    textDecoration: task.completed
+                      ? "line-through"
+                      : "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  {task.title}
+                </span>
+
+                <div style={{ display: "flex", gap: "5px" }}>
+                  <button onClick={() => startEdit(task)}>
+                    Edit
+                  </button>
+
+                  <button onClick={() => deleteTask(task._id)}>
+                    Delete
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         ))}
       </div>
